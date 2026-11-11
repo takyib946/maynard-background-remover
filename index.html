@@ -4,13 +4,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Maynard Background Remover | Free AI Tool</title>
-
-<meta name="description" content="Remove image backgrounds online for free with Maynard AI. Download transparent PNG images without watermarks.">
-<meta name="keywords" content="Maynard Background Removal, Maynard Background Remover, free AI background remover">
-<meta name="robots" content="index,follow">
 <meta name="theme-color" content="#ffffff">
+<title>Maynard Background Remover | Free AI Tool</title>
+<meta name="description" content="Remove image backgrounds online for free with Maynard AI. Download transparent PNG images.">
+<meta name="robots" content="index,follow">
 
 <style>
 * {
@@ -70,8 +67,8 @@ main {
 }
 
 .hero {
-  width: 245px;
-  height: 245px;
+  width: 225px;
+  height: 225px;
   margin: auto;
   border-radius: 18px;
   overflow: hidden;
@@ -165,7 +162,7 @@ h1 {
 
 .preview {
   width: 100%;
-  max-height: 420px;
+  max-height: 350px;
   object-fit: contain;
   background-color: #eee;
   background-image:
@@ -261,17 +258,16 @@ footer {
 }
 
 @media(max-width:500px) {
-  .hero {
-    width: 225px;
-    height: 225px;
-  }
-
   .description {
     font-size: 16px;
   }
 
   main {
     padding: 28px 18px 55px;
+  }
+
+  .actions {
+    flex-direction: column;
   }
 }
 </style>
@@ -281,7 +277,6 @@ footer {
 
 <header>
   <div class="logo">Maynard<span>.</span></div>
-
   <button class="menu"
     onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'})">
     ☰
@@ -305,21 +300,19 @@ footer {
   <p class="description">
     Remove backgrounds from your images online with
     Maynard's AI background remover. Get clean,
-    high-quality transparent images in seconds.
+    high-quality transparent images.
   </p>
 
   <div class="features">
     <div class="feature">
       <span class="check">✓</span> Free PNG Download
     </div>
-
     <div class="feature">
       <span class="check">✓</span> No Watermark
     </div>
   </div>
 
   <div class="upload-area">
-
     <button class="upload-btn" id="uploadBtn">
       ↑ &nbsp; Upload Image
     </button>
@@ -332,17 +325,12 @@ footer {
     <p class="drop-text">
       JPG, PNG or WebP · Maximum 15 MB
     </p>
-
   </div>
 
   <section id="workspace">
-
     <h2>Your Image</h2>
 
-    <img
-      id="preview"
-      class="preview"
-      alt="Image preview">
+    <img id="preview" class="preview" alt="Image preview">
 
     <p id="status">Preparing...</p>
 
@@ -351,7 +339,6 @@ footer {
     </div>
 
     <div class="actions">
-
       <button class="action secondary" id="resetBtn">
         Choose Another
       </button>
@@ -359,9 +346,7 @@ footer {
       <button class="action" id="downloadBtn">
         Download PNG
       </button>
-
     </div>
-
   </section>
 
   <div class="trust">
@@ -373,7 +358,6 @@ footer {
 
   <section id="about">
     <h2>About Maynard Background Remover</h2>
-
     <p style="margin-top:15px">
       Maynard makes removing unwanted image backgrounds easy.
       Upload a picture, let AI process it, and download
@@ -406,18 +390,18 @@ let originalUrl = null;
 let processing = false;
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
-const MAX_DIMENSION = 1800;
+const MAX_DIMENSION = 1024;
 
 function setStatus(message) {
   statusText.textContent = message;
 }
 
 function setProgress(value) {
-  progress.style.width = Math.max(0, Math.min(100, value)) + "%";
+  progress.style.width =
+    Math.max(0, Math.min(100, value)) + "%";
 }
 
 function cleanUrls() {
-
   if (originalUrl) {
     URL.revokeObjectURL(originalUrl);
     originalUrl = null;
@@ -429,14 +413,13 @@ function cleanUrls() {
   }
 }
 
-// Load AI only once per page session
+// Load the AI engine once
 async function loadAI() {
-
   if (removeBackgroundFunction) {
     return removeBackgroundFunction;
   }
 
-  setStatus("Connecting to Maynard AI...");
+  setStatus("Loading Maynard AI. First use may take a little longer...");
 
   const module = await import(
     "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm"
@@ -446,10 +429,7 @@ async function loadAI() {
     module.removeBackground || module.default;
 
   if (typeof removeBackground !== "function") {
-    throw new Error(
-      "AI function unavailable. Exports: " +
-      Object.keys(module).join(", ")
-    );
+    throw new Error("Could not load the AI processing function.");
   }
 
   removeBackgroundFunction = removeBackground;
@@ -457,10 +437,9 @@ async function loadAI() {
   return removeBackgroundFunction;
 }
 
-// Resize large photos to improve processing time
+// Resize image to reduce phone memory usage
 async function optimizeImage(file) {
-
-  setStatus("Optimizing your image...");
+  setStatus("Preparing your image for mobile processing...");
 
   if (!("createImageBitmap" in window)) {
     return file;
@@ -469,7 +448,6 @@ async function optimizeImage(file) {
   const bitmap = await createImageBitmap(file);
 
   try {
-
     const width = bitmap.width;
     const height = bitmap.height;
 
@@ -477,79 +455,53 @@ async function optimizeImage(file) {
       return file;
     }
 
-    const scale = MAX_DIMENSION / Math.max(width, height);
+    const scale =
+      MAX_DIMENSION / Math.max(width, height);
 
     const newWidth = Math.round(width * scale);
     const newHeight = Math.round(height * scale);
 
     const canvas = document.createElement("canvas");
-
     canvas.width = newWidth;
     canvas.height = newHeight;
 
-    const context = canvas.getContext("2d", {
-      alpha: true
-    });
+    const context = canvas.getContext("2d");
 
     if (!context) {
-      throw new Error("Could not prepare image canvas.");
+      throw new Error("Could not prepare the image.");
     }
 
-    context.drawImage(bitmap, 0, 0, newWidth, newHeight);
+    context.drawImage(
+      bitmap,
+      0,
+      0,
+      newWidth,
+      newHeight
+    );
 
     const resized = await new Promise((resolve, reject) => {
-
       canvas.toBlob(blob => {
-
         if (blob) {
           resolve(blob);
         } else {
-          reject(new Error("Image optimization failed."));
+          reject(new Error("Image resizing failed."));
         }
-
       }, "image/png");
-
     });
 
     return resized;
 
   } finally {
-
     bitmap.close();
-
   }
 }
 
-// Check WebGPU availability
-async function canUseGPU() {
-
-  try {
-
-    if (!navigator.gpu) {
-      return false;
-    }
-
-    const adapter = await navigator.gpu.requestAdapter();
-
-    return !!adapter;
-
-  } catch (error) {
-
-    console.warn("GPU unavailable:", error);
-
-    return false;
-
-  }
-}
-
-// Run AI with selected device
-async function processImage(removeBackground, image, device) {
-
+// CPU-only processing for mobile compatibility
+async function processImage(removeBackground, image) {
   return await removeBackground(image, {
-
     model: "isnet_quint8",
 
-    device: device,
+    device: "cpu",
 
     output: {
       format: "image/png",
@@ -558,33 +510,24 @@ async function processImage(removeBackground, image, device) {
     },
 
     progress: (key, current, total) => {
-
       if (total > 0) {
-
         const percent = Math.round(
-          current / total * 100
+          (current / total) * 100
         );
 
         setProgress(percent);
-
         setStatus(
           "Preparing AI resources: " + percent + "%"
         );
-
       }
-
     }
-
   });
-
 }
 
 uploadBtn.addEventListener("click", () => {
-
   if (!processing) {
     fileInput.click();
   }
-
 });
 
 fileInput.addEventListener("change", async () => {
@@ -594,27 +537,20 @@ fileInput.addEventListener("change", async () => {
   if (!file) return;
 
   if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-
     alert("Please choose a JPG, PNG or WebP image.");
-
     fileInput.value = "";
-
     return;
   }
 
   if (file.size > MAX_FILE_SIZE) {
-
     alert("Image is too large. Maximum size is 15 MB.");
-
     fileInput.value = "";
-
     return;
   }
 
   if (processing) return;
 
   processing = true;
-
   uploadBtn.disabled = true;
   uploadBtn.textContent = "Processing...";
 
@@ -622,85 +558,34 @@ fileInput.addEventListener("change", async () => {
   downloadBtn.style.display = "none";
 
   setProgress(0);
-
   cleanUrls();
 
   originalUrl = URL.createObjectURL(file);
-
   preview.src = originalUrl;
 
-  workspace.scrollIntoView({
-    behavior: "smooth"
-  });
+  workspace.scrollIntoView({ behavior: "smooth" });
 
   try {
 
-    // Load the AI engine
+    // Load AI
     const removeBackground = await loadAI();
 
-    // Optimize input
+    // Resize before processing
     const optimizedImage = await optimizeImage(file);
 
-    // Select GPU when available
-    setStatus("Checking processing capabilities...");
+    // Always use CPU; no GPU initialization
+    setStatus("Starting mobile-friendly AI processing...");
 
-    const gpuAvailable = await canUseGPU();
-
-    let output;
-
-    if (gpuAvailable) {
-
-      try {
-
-        setStatus("Starting GPU acceleration...");
-
-        output = await processImage(
-          removeBackground,
-          optimizedImage,
-          "gpu"
-        );
-
-      } catch (gpuError) {
-
-        console.warn(
-          "GPU processing unavailable. Switching to CPU.",
-          gpuError
-        );
-
-        setProgress(0);
-
-        setStatus(
-          "Switching to CPU processing for compatibility..."
-        );
-
-        output = await processImage(
-          removeBackground,
-          optimizedImage,
-          "cpu"
-        );
-
-      }
-
-    } else {
-
-      setStatus("Starting optimized CPU processing...");
-
-      output = await processImage(
-        removeBackground,
-        optimizedImage,
-        "cpu"
-      );
-
-    }
+    const output = await processImage(
+      removeBackground,
+      optimizedImage
+    );
 
     if (!(output instanceof Blob) || output.size === 0) {
-
       throw new Error("AI returned an empty image.");
-
     }
 
     resultUrl = URL.createObjectURL(output);
-
     preview.src = resultUrl;
 
     setProgress(100);
@@ -718,13 +603,14 @@ fileInput.addEventListener("change", async () => {
     setProgress(0);
 
     setStatus(
-      "Error: " + (error.message || String(error))
+      "Could not remove background: " +
+      (error.message || String(error)) +
+      ". Please try a smaller image or check your internet connection."
     );
 
   } finally {
 
     processing = false;
-
     uploadBtn.disabled = false;
     uploadBtn.textContent = "↑ Upload Image";
 
@@ -737,15 +623,11 @@ downloadBtn.addEventListener("click", () => {
   if (!resultUrl) return;
 
   const link = document.createElement("a");
-
   link.href = resultUrl;
-
   link.download = "maynard-background-removed.png";
 
   document.body.appendChild(link);
-
   link.click();
-
   link.remove();
 
 });
@@ -755,11 +637,10 @@ resetBtn.addEventListener("click", () => {
   if (processing) return;
 
   fileInput.value = "";
-
   cleanUrls();
 
+  preview.removeAttribute("src");
   workspace.style.display = "none";
-
   downloadBtn.style.display = "none";
 
   setProgress(0);
